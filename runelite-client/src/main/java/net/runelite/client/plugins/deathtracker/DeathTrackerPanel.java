@@ -130,7 +130,11 @@ public class DeathTrackerPanel extends PluginPanel
 
     void add(ArrayList<DeathTrackerRecord> records)
     {
+        record.clear();
+        System.out.println("Record added to pannels -> " + records.toString());
         record.addAll(records);
+        System.out.println("Record added to pannels -> " + record.toString());
+        rebuild();
         buildBox(records);
     }
 
@@ -141,7 +145,9 @@ public class DeathTrackerPanel extends PluginPanel
      */
     private void buildBox(ArrayList<DeathTrackerRecord> records)
     {
-//        // If this record is not part of current view, return
+
+        //
+// If this record is not part of current view, return
 
 //
 //        // Group all similar loot together

@@ -88,6 +88,8 @@ public class DeathTrackerPlugin extends Plugin {
 
         clientToolbar.addNavigation(navButton);
 
+        config.deathItems(records.toString());
+
     }
 
     @Override
@@ -97,29 +99,48 @@ public class DeathTrackerPlugin extends Plugin {
 
     @Subscribe
     public void onLocalPlayerDeath(LocalPlayerDeath death) {
-        if (client.isInInstancedRegion())
-        {
-            return;
-        }
 
         deathPoint = client.getLocalPlayer().getWorldLocation();
         worldNum = client.getWorld();
         timeOfLastDeath = Instant.now();
+
+        config.timeOfDeath(timeOfLastDeath);
+        config.deathWorld(worldNum);
     }
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
 
-        ItemContainer changedItemContainer = event.getItemContainer();
-        Collection<ItemStack> cItemContainer = Arrays.stream(changedItemContainer.getItems())
-                .filter(item->item.getId()>0)
-                .map(item -> new ItemStack(item.getId(),item.getQuantity()))
-                .collect(Collectors.toList());
-        ArrayList<DeathTrackerItem> cEntries = buildEntries(stack(cItemContainer));
 
+
+        DeathTrackerRecord inventoryRecord = getInventoryContainer();
+
+            records.set(0, inventoryRecord);
+
+
+
+        DeathTrackerRecord equipmentRecord = getEquipmentContainer();
+
+            records.set(1, equipmentRecord);
+
+
+
+        //System.out.println("Records First -> " + records.toString());
+        String storedRecord = config.deathItems();
+        if(storedRecord.contains(inventoryRecord.toString()) && storedRecord.contains(equipmentRecord.toString())){
+            return;
+        }
+        else{
+            config.deathItems(records.toString());
+            SwingUtilities.invokeLater(() -> panel.add(records));
+        }
+
+    }
+
+
+    private DeathTrackerRecord getInventoryContainer()
+    {
         ItemContainer InventoryContainer = client.getItemContainer(InventoryID.INVENTORY);
-        ItemContainer EquipmentContainer = client.getItemContainer(InventoryID.EQUIPMENT);
-
         if (InventoryContainer != null)
         {
             Collection<ItemStack> iItems = Arrays.stream(InventoryContainer.getItems())
@@ -128,12 +149,19 @@ public class DeathTrackerPlugin extends Plugin {
                     .collect(Collectors.toList());
             ArrayList<DeathTrackerItem> iEntries = buildEntries(stack(iItems));
 
+                //records.set(0, new DeathTrackerRecord(InventoryID.INVENTORY, iEntries));
+                return new DeathTrackerRecord(InventoryID.INVENTORY, iEntries);
 
-            if (iEntries.equals(cEntries))
-            {
-                records.set(0, new DeathTrackerRecord(InventoryID.INVENTORY, iEntries));
-            }
         }
+
+        //records.set(0 ,new DeathTrackerRecord(InventoryID.INVENTORY, new ArrayList<DeathTrackerItem>()));
+        return new DeathTrackerRecord(InventoryID.INVENTORY,new ArrayList<DeathTrackerItem>());
+
+    }
+
+    private DeathTrackerRecord getEquipmentContainer()
+    {
+        ItemContainer EquipmentContainer = client.getItemContainer(InventoryID.EQUIPMENT);
 
         if(EquipmentContainer != null){
             Collection<ItemStack> eItems = Arrays.stream(EquipmentContainer.getItems())
@@ -142,25 +170,13 @@ public class DeathTrackerPlugin extends Plugin {
                     .collect(Collectors.toList());
             ArrayList<DeathTrackerItem> eEntries = buildEntries(stack(eItems));
 
-            if (eEntries.equals(cEntries))
-            {
-                records.set(1,new DeathTrackerRecord(InventoryID.EQUIPMENT, eEntries));
+                //records.set(1,new DeathTrackerRecord(InventoryID.EQUIPMENT, eEntries));
+                return new DeathTrackerRecord(InventoryID.EQUIPMENT, eEntries);
 
-            }
         }
 
-        if(InventoryContainer == null || InventoryContainer.getItems().length == 0)
-        {
-            records.set(0 ,new DeathTrackerRecord(InventoryID.INVENTORY, new ArrayList<DeathTrackerItem>()));
-        }
-
-        if(EquipmentContainer == null || EquipmentContainer.getItems().length == 0)
-        {
-            records.set(1 ,new DeathTrackerRecord(InventoryID.EQUIPMENT,new ArrayList<DeathTrackerItem>()));
-        }
-
-        SwingUtilities.invokeLater(() -> panel.add(records));
-
+            //records.set(1 ,new DeathTrackerRecord(InventoryID.EQUIPMENT,new ArrayList<DeathTrackerItem>()));
+            return new DeathTrackerRecord(InventoryID.EQUIPMENT, new ArrayList<DeathTrackerItem>());
     }
 
     public void onConfigChanged(ConfigChanged event)
