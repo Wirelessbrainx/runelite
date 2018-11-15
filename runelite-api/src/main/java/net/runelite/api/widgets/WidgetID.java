@@ -375,6 +375,7 @@ public class WidgetID
 		static final int EQUIPMENT_ICON = 62;
 		static final int PRAYER_ICON = 63;
 		static final int MAGIC_ICON = 64;
+		static final int INTERFACE_CONTAINER = 65;
 	}
 
 	static class ResizableViewportBottomLine
@@ -415,10 +416,12 @@ public class WidgetID
 		static final int BUTTONS = 1;
 		static final int REPORT_TEXT = 36;
 		static final int FRAME = 37;
+		static final int TRANSPARENT_BACKGROUND = 38;
 		static final int CONTAINER = 40;
 		static final int TITLE = 44;
 		static final int FULL_INPUT = 45;
 		static final int MESSAGES = 55;
+		static final int TRANSPARENT_BACKGROUND_LINES = 56;
 		static final int INPUT = 57;
 	}
 
