@@ -1,11 +1,19 @@
 package net.runelite.client.plugins.deathtracker;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 
-@Value
+@AllArgsConstructor
 class DeathTrackerItem {
-    private final int id;
-    private final String name;
-    private final int quantity;
-    private final long price;
+    @Getter
+    private int id;
+    @Getter
+    private String name;
+    @Getter
+    @Setter
+    private int quantity;
+    @Getter
+    private long price;
 }

@@ -33,8 +33,7 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.StackFormatter;
 
-public class DeathTrackerPanel extends PluginPanel
-{
+public class DeathTrackerPanel extends PluginPanel {
 //    private static final ImageIcon SINGLE_LOOT_VIEW;
 //    private static final ImageIcon SINGLE_LOOT_VIEW_FADED;
 //    private static final ImageIcon SINGLE_LOOT_VIEW_HOVER;
@@ -55,6 +54,7 @@ public class DeathTrackerPanel extends PluginPanel
 
     private final JPanel overallPanel = new JPanel();
     private final JLabel overallIcon = new JLabel();
+    private final JLabel overallGpLabel = new JLabel();
 
 
 
@@ -68,12 +68,13 @@ public class DeathTrackerPanel extends PluginPanel
     private final List<DeathTrackerBox> boxes = new ArrayList<>();
 
     private final ItemManager itemManager;
-//    private boolean groupLoot;
+    //    private boolean groupLoot;
     private String currentView;
 
-    DeathTrackerPanel(final ItemManager itemManager){
+    DeathTrackerPanel(final ItemManager itemManager) {
 
         this.itemManager = itemManager;
+
         setBorder(new EmptyBorder(6, 6, 6, 6));
         setBackground(ColorScheme.DARK_GRAY_COLOR);
         setLayout(new BorderLayout());
@@ -105,12 +106,24 @@ public class DeathTrackerPanel extends PluginPanel
         overallInfo.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         overallInfo.setLayout(new GridLayout(2, 1));
         overallInfo.setBorder(new EmptyBorder(2, 10, 2, 0));
+        overallGpLabel.setFont(FontManager.getRunescapeSmallFont());
+        overallInfo.add(overallGpLabel);
         overallPanel.add(overallIcon, BorderLayout.WEST);
         overallPanel.add(overallInfo, BorderLayout.CENTER);
 
+        final JMenuItem reset = new JMenuItem("Reset All");
+        reset.addActionListener(e ->
+        {
+            record.removeIf(r -> r.matches(InventoryID.INVENTORY));
+            boxes.removeIf(b -> b.matches(InventoryID.INVENTORY));
+            updateOverallCost();
+            logsContainer.removeAll();
+            logsContainer.repaint();
+        });
+
         final JPopupMenu popupMenu = new JPopupMenu();
         popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
-        //popupMenu.add(reset);
+        popupMenu.add(reset);
         overallPanel.setComponentPopupMenu(popupMenu);
 
         logsContainer.setLayout(new BoxLayout(logsContainer, BoxLayout.Y_AXIS));
@@ -123,19 +136,18 @@ public class DeathTrackerPanel extends PluginPanel
         add(errorPanel);
     }
 
-    void loadHeaderIcon(BufferedImage img)
-    {
+    void loadHeaderIcon(BufferedImage img) {
         overallIcon.setIcon(new ImageIcon(img));
     }
 
-    void add(ArrayList<DeathTrackerRecord> records)
-    {
+    void add(ArrayList<DeathTrackerRecord> records) {
         record.clear();
-        System.out.println("Record added to pannels -> " + records.toString());
+        //System.out.println("Record added to pannels -> " + records.toString());
         record.addAll(records);
-        System.out.println("Record added to pannels -> " + record.toString());
+        //System.out.println("Record added to pannels -> " + record.toString());
         rebuild();
         buildBox(records);
+        updateOverallCost();
     }
 
     /**
@@ -143,8 +155,7 @@ public class DeathTrackerPanel extends PluginPanel
      * add its items to it, updating the log's overall price and kills. If not, a new log will be created
      * to hold this entry's information.
      */
-    private void buildBox(ArrayList<DeathTrackerRecord> records)
-    {
+    private void buildBox(ArrayList<DeathTrackerRecord> records) {
 
         //
 // If this record is not part of current view, return
@@ -172,7 +183,7 @@ public class DeathTrackerPanel extends PluginPanel
 
         // Create box
         final DeathTrackerBox box0 = new DeathTrackerBox(itemManager, record.get(0).getTitle());
-        final DeathTrackerBox box1 = new DeathTrackerBox(itemManager,record.get(1).getTitle());
+        final DeathTrackerBox box1 = new DeathTrackerBox(itemManager, record.get(1).getTitle());
         box0.combine(record.get(0));
         box1.combine(record.get(1));
 
@@ -212,21 +223,40 @@ public class DeathTrackerPanel extends PluginPanel
         boxes.add(box0);
         boxes.add(box1);
         logsContainer.add(box0, 0);
-        logsContainer.add(box1,1);
+        logsContainer.add(box1, 1);
 
     }
 
     /**
      * Rebuilds all the boxes from scratch using existing listed records, depending on the grouping mode.
      */
-    private void rebuild()
-    {
+    private void rebuild() {
         logsContainer.removeAll();
         boxes.clear();
         //buildBox(record);
         logsContainer.revalidate();
         logsContainer.repaint();
     }
+
+    private void updateOverallCost() {
+        long overallGp = 0;
+
+        for (DeathTrackerRecord records : record) {
+            for (DeathTrackerItem item : records.getItems()) {
+                overallGp += item.getPrice();
+            }
+        }
+
+        overallGpLabel.setText(htmlLabel("Total Value: ", overallGp));
+    }
+
+    private static String htmlLabel(String key, long value)
+    {
+        final String valueStr = StackFormatter.quantityToStackSize(value);
+        return String.format(HTML_LABEL_TEMPLATE, ColorUtil.toHexColor(ColorScheme.LIGHT_GRAY_COLOR), key, valueStr);
+
+    }
+
 }
 
 

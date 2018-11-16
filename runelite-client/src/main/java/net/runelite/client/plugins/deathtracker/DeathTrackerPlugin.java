@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
+
+import java.awt.*;
 import java.time.Instant;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.game.ItemManager;
@@ -21,10 +23,12 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.api.GameState;
+import net.runelite.http.api.item.Item;
 import sun.security.jca.GetInstance;
 
 import java.awt.image.BufferedImage;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @PluginDescriptor(
@@ -75,9 +79,10 @@ public class DeathTrackerPlugin extends Plugin {
     protected void startUp() {
 
         panel = new DeathTrackerPanel(itemManager);
-        //spriteManager.getSpriteAsync(SpriteID.TAB_INVENTORY, 0, panel::loadHeaderIcon);
+        spriteManager.getSpriteAsync(SpriteID.EQUIPMENT_ITEMS_LOST_ON_DEATH, 0, panel::loadHeaderIcon);
+        final BufferedImage icon = ImageUtil.getResourceStreamFromClass(getClass(), "ItemsLostOnDeath.png");
 
-        final BufferedImage icon = ImageUtil.getResourceStreamFromClass(getClass(), "Bones_detail.png");
+
 
         navButton = NavigationButton.builder()
                 .tooltip("Death Traker")
@@ -88,7 +93,6 @@ public class DeathTrackerPlugin extends Plugin {
 
         clientToolbar.addNavigation(navButton);
 
-        config.deathItems(records.toString());
 
     }
 
@@ -111,32 +115,77 @@ public class DeathTrackerPlugin extends Plugin {
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
 
+        ItemContainer itemContainer = event.getItemContainer();
 
+        if (hasDied()){
+            if (records.toString() != config.deathItems()) {
 
-        DeathTrackerRecord inventoryRecord = getInventoryContainer();
+                DeathTrackerRecord inventoryOnDeath = getInventoryContainer();
+                DeathTrackerRecord equipmentOnDeath = getEquipmentContainer();
 
-            records.set(0, inventoryRecord);
+                if (records.get(0).getTitle() == InventoryID.INVENTORY) {
+                    DeathTrackerRecord inventoryBeforeDeath = records.get(0);
 
+                    for (DeathTrackerItem item : inventoryOnDeath.getItems()) {
+                        if (inventoryBeforeDeath.getItems().contains(item)) {
+                            int itemNotLost = inventoryBeforeDeath.getItems().indexOf(item);
 
+                            if (item.getQuantity() == inventoryBeforeDeath.getItems().get(itemNotLost).getQuantity())
+                            {
+                                inventoryBeforeDeath.getItems().remove(itemNotLost);
+                            }
 
-        DeathTrackerRecord equipmentRecord = getEquipmentContainer();
+                            else
+                             {
+                                inventoryBeforeDeath.getItems().get(itemNotLost).setQuantity(inventoryBeforeDeath.getItems().get(itemNotLost).getQuantity() - inventoryOnDeath.getItems().get(inventoryOnDeath.getItems().indexOf(item)).getQuantity());
+                             }
 
-            records.set(1, equipmentRecord);
+                        }
+                    }
+                    records.set(0, inventoryBeforeDeath);
+                }
 
+                if (records.get(1).getTitle() == InventoryID.EQUIPMENT) {
+                    DeathTrackerRecord equipmentBeforeDeath = records.get(1);
 
+                    for (DeathTrackerItem  eItem: equipmentOnDeath.getItems())
+                    {
+                        if (equipmentBeforeDeath.getItems().contains(eItem)) {
+                            int itemNotLost = equipmentBeforeDeath.getItems().indexOf(eItem);
 
-        //System.out.println("Records First -> " + records.toString());
-        String storedRecord = config.deathItems();
-        if(storedRecord.contains(inventoryRecord.toString()) && storedRecord.contains(equipmentRecord.toString())){
-            return;
+                            if (eItem.getQuantity() == equipmentBeforeDeath.getItems().get(itemNotLost).getQuantity()) {
+                                equipmentBeforeDeath.getItems().remove(itemNotLost);
+                            }
+                            else
+                            {
+                                equipmentBeforeDeath.getItems().get(itemNotLost).setQuantity(equipmentBeforeDeath.getItems().get(itemNotLost).getQuantity() - equipmentOnDeath.getItems().get(equipmentOnDeath.getItems().indexOf(eItem)).getQuantity());
+                            }
+                        }
+                    }
+                    records.set(1, equipmentBeforeDeath);
+                }
+                config.deathItems(records.toString());
+
+            }
+            SwingUtilities.invokeLater(() -> panel.add(records));
         }
-        else{
-            config.deathItems(records.toString());
+        if(!hasDied()) {
+            if (itemContainer == client.getItemContainer(InventoryID.INVENTORY)) {
+                DeathTrackerRecord inventoryRecord = getInventoryContainer();
+
+                records.set(0, inventoryRecord);
+            }
+
+            if (itemContainer == client.getItemContainer(InventoryID.EQUIPMENT)) {
+                DeathTrackerRecord equipmentRecord = getEquipmentContainer();
+
+                records.set(1, equipmentRecord);
+            }
+
             SwingUtilities.invokeLater(() -> panel.add(records));
         }
 
     }
-
 
     private DeathTrackerRecord getInventoryContainer()
     {
@@ -201,10 +250,19 @@ public class DeathTrackerPlugin extends Plugin {
         }
     }
 
-
     private boolean hasDied()
     {
-        return false;
+        return config.timeOfDeath() != null;
+    }
+
+    private void resetDeath()
+    {
+        config.timeOfDeath(null);
+        config.deathWorld(0);
+        DeathTrackerRecord inventoryRecord = getInventoryContainer();
+        DeathTrackerRecord equipmentRecord = getEquipmentContainer();
+        records.set(0, inventoryRecord);
+        records.set(1, equipmentRecord);
     }
 
     private ArrayList<DeathTrackerItem> buildEntries(final Collection<ItemStack> itemStacks)
