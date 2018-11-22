@@ -34,41 +34,32 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.StackFormatter;
 
 public class DeathTrackerPanel extends PluginPanel {
-//    private static final ImageIcon SINGLE_LOOT_VIEW;
-//    private static final ImageIcon SINGLE_LOOT_VIEW_FADED;
-//    private static final ImageIcon SINGLE_LOOT_VIEW_HOVER;
-//    private static final ImageIcon GROUPED_LOOT_VIEW;
-//    private static final ImageIcon GROUPED_LOOT_VIEW_FADED;
-//    private static final ImageIcon GROUPED_LOOT_VIEW_HOVER;
-//    private static final ImageIcon BACK_ARROW_ICON;
-//    private static final ImageIcon BACK_ARROW_ICON_HOVER;
 
     private static final String HTML_LABEL_TEMPLATE =
             "<html><body style='color:%s'>%s<span style='color:white'>%s</span></body></html>";
 
-    // When there is no loot, display this
+    // When there are no items to display
     private final PluginErrorPanel errorPanel = new PluginErrorPanel();
 
-    // Handle loot boxes
+    // Handle Inventory's
     private final JPanel logsContainer = new JPanel();
 
     private final JPanel overallPanel = new JPanel();
     private final JLabel overallIcon = new JLabel();
     private final JLabel overallGpLabel = new JLabel();
+    private final JLabel overallItemsLabel = new JLabel();
 
 
 
     private final JPanel actionsContainer = new JPanel();
     private final JLabel detailsTitle = new JLabel();
     private final JLabel backBtn = new JLabel();
-//    private final JLabel singleLootBtn = new JLabel();
-//    private final JLabel groupedLootBtn = new JLabel();
+
 
     private final List<DeathTrackerRecord> record = new ArrayList<>();
     private final List<DeathTrackerBox> boxes = new ArrayList<>();
 
     private final ItemManager itemManager;
-    //    private boolean groupLoot;
     private String currentView;
 
     DeathTrackerPanel(final ItemManager itemManager) {
@@ -101,13 +92,20 @@ public class DeathTrackerPanel extends PluginPanel {
         actionsContainer.add(leftTitleContainer, BorderLayout.WEST);
         actionsContainer.add(viewControls, BorderLayout.EAST);
 
+        overallPanel.setBorder(new EmptyBorder(8, 10, 8, 10));
+        overallPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        overallPanel.setLayout(new BorderLayout());
+        overallPanel.setVisible(false);
+
         // Add icon and contents
         final JPanel overallInfo = new JPanel();
         overallInfo.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         overallInfo.setLayout(new GridLayout(2, 1));
         overallInfo.setBorder(new EmptyBorder(2, 10, 2, 0));
         overallGpLabel.setFont(FontManager.getRunescapeSmallFont());
+        overallItemsLabel.setFont(FontManager.getRunescapeSmallFont());
         overallInfo.add(overallGpLabel);
+        overallInfo.add(overallItemsLabel);
         overallPanel.add(overallIcon, BorderLayout.WEST);
         overallPanel.add(overallInfo, BorderLayout.CENTER);
 
@@ -148,6 +146,7 @@ public class DeathTrackerPanel extends PluginPanel {
         rebuild();
         buildBox(records);
         updateOverallCost();
+        updateTotalItemsLost();
     }
 
     /**
@@ -155,29 +154,11 @@ public class DeathTrackerPanel extends PluginPanel {
      * add its items to it, updating the log's overall price and kills. If not, a new log will be created
      * to hold this entry's information.
      */
-    private void buildBox(ArrayList<DeathTrackerRecord> records) {
-
-        //
-// If this record is not part of current view, return
-
-//
-//        // Group all similar loot together
-//        if (groupLoot)
-//        {
-//            for (DeathTrackerBox box : boxes)
-//            {
-//////                if (box.matches(records))
-//////                {
-////                    box.combine(records);
-////                    //updateOverall();
-////                    return;
-//////                }
-//            }
-////        }
-
+    private void buildBox(ArrayList<DeathTrackerRecord> records)
+    {
         // Show main view
         remove(errorPanel);
-        actionsContainer.setVisible(true);
+        //actionsContainer.setVisible(true);
         overallPanel.setVisible(true);
 
 
@@ -248,6 +229,19 @@ public class DeathTrackerPanel extends PluginPanel {
         }
 
         overallGpLabel.setText(htmlLabel("Total Value: ", overallGp));
+    }
+
+    private void updateTotalItemsLost()
+    {
+        int overallItems = 0;
+
+        for (DeathTrackerRecord records : record) {
+            for (DeathTrackerItem item : records.getItems()) {
+                overallItems += item.getQuantity();
+            }
+        }
+        overallItemsLabel.setText(htmlLabel("Total Items Lost: ", overallItems));
+
     }
 
     private static String htmlLabel(String key, long value)

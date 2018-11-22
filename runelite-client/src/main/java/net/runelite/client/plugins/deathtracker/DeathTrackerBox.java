@@ -30,6 +30,7 @@ public class DeathTrackerBox extends JPanel {
 
     @Getter
     private final ArrayList<DeathTrackerRecord> records = new ArrayList<>();
+    private long totalPrice;
 
     DeathTrackerBox(final ItemManager itemManager, final InventoryID id) {
         this.id = id;
@@ -119,7 +120,7 @@ public class DeathTrackerBox extends JPanel {
     {
         final List<DeathTrackerItem> allItems = new ArrayList<>();
         final List<DeathTrackerItem> items = new ArrayList<>();
-
+        totalPrice = 0;
 
         for (DeathTrackerRecord record : records)
         {
@@ -128,7 +129,7 @@ public class DeathTrackerBox extends JPanel {
 
         for (final DeathTrackerItem entry : allItems)
         {
-            //totalPrice += entry.getPrice();
+            totalPrice += entry.getPrice();
 
             int quantity = 0;
             for (final DeathTrackerItem i : items)
@@ -181,6 +182,16 @@ public class DeathTrackerBox extends JPanel {
         }
 
         itemContainer.repaint();
+    }
+
+    void rebuild()
+    {
+        buildItems();
+
+        priceLabel.setText(StackFormatter.quantityToStackSize(totalPrice) + " gp");
+
+
+        repaint();
     }
 
     private static String buildToolTip(DeathTrackerItem item)
