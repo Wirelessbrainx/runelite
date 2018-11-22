@@ -190,7 +190,6 @@ public class DeathTrackerBox extends JPanel {
 
         priceLabel.setText(StackFormatter.quantityToStackSize(totalPrice) + " gp");
 
-
         repaint();
     }
 

@@ -56,8 +56,8 @@ public class DeathTrackerPanel extends PluginPanel {
     private final JLabel backBtn = new JLabel();
 
 
-    private final List<DeathTrackerRecord> record = new ArrayList<>();
-    private final List<DeathTrackerBox> boxes = new ArrayList<>();
+    private final ArrayList<DeathTrackerRecord> record = new ArrayList<>();
+    private final ArrayList<DeathTrackerBox> boxes = new ArrayList<>();
 
     private final ItemManager itemManager;
     private String currentView;
@@ -143,10 +143,18 @@ public class DeathTrackerPanel extends PluginPanel {
         //System.out.println("Record added to pannels -> " + records.toString());
         record.addAll(records);
         //System.out.println("Record added to pannels -> " + record.toString());
+
+        ArrayList<DeathTrackerBox> trackerBox = buildBox(records);
+
+        if (trackerBox !=null && !trackerBox.isEmpty()){
+            for (DeathTrackerBox box: trackerBox) {
+                box.rebuild();
+                updateOverallCost();
+                updateTotalItemsLost();
+            }
+        }
         rebuild();
-        buildBox(records);
-        updateOverallCost();
-        updateTotalItemsLost();
+
     }
 
     /**
@@ -154,7 +162,7 @@ public class DeathTrackerPanel extends PluginPanel {
      * add its items to it, updating the log's overall price and kills. If not, a new log will be created
      * to hold this entry's information.
      */
-    private void buildBox(ArrayList<DeathTrackerRecord> records)
+    private ArrayList<DeathTrackerBox> buildBox(ArrayList<DeathTrackerRecord> records)
     {
         // Show main view
         remove(errorPanel);
@@ -205,7 +213,7 @@ public class DeathTrackerPanel extends PluginPanel {
         boxes.add(box1);
         logsContainer.add(box0, 0);
         logsContainer.add(box1, 1);
-
+        return boxes;
     }
 
     /**
@@ -214,7 +222,10 @@ public class DeathTrackerPanel extends PluginPanel {
     private void rebuild() {
         logsContainer.removeAll();
         boxes.clear();
-        //buildBox(record);
+        buildBox(record);
+        boxes.forEach(DeathTrackerBox::rebuild);
+        updateTotalItemsLost();
+        updateOverallCost();
         logsContainer.revalidate();
         logsContainer.repaint();
     }
